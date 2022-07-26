@@ -5,8 +5,8 @@ This project has dependencies: LeptonWeighter, nuSQuIDS, SQuIDS, nuflux.
 Currently handled with specific env variables in the IceTray environment.
 
 Usage:
+------------
 
-============
 Propagation
 ============
 
@@ -19,11 +19,19 @@ After calculating you want the state to be saved, so run with --cache unless you
 
 For ease of use, also use '--auto', which will run over both selections, both fluxes, and a hard-coded range of normalisations. 
 
-=============
 Reweighting
 =============
 
 To reweight to all of the listed normalisations and fluxes for a given configuration for all datasets (1e2-1e4, 1e4-1e6, 1e6-1e8) all flavours:
 
 ```python3 create_weight_df.py --do_all -s {selection}```
+
+Combining
+===========
+
+Once the files are reweighted and updated, you need to combine them into a single file using
+
+```create_full_df.py -ia --cache```
+
+This will make a single easy to use pandas-readable file.
 
