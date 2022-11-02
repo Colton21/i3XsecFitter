@@ -32,9 +32,19 @@ The new earth model files can be fed into the propagation code with:
 Reweighting
 =============
 
+Reweighting relies on LeptonWeighter and requires entering an icetray environment:
+
+```./build/env-shell.sh```
+
 To reweight to all of the listed normalisations and fluxes for a given configuration for all datasets (1e2-1e4, 1e4-1e6, 1e6-1e8) all flavours:
 
 ```python3 create_weight_df.py --do_all -s {selection}```
+
+Support for the variation in the PREM model can be handled with 
+
+```--earth up```
+
+or down.
 
 Combining
 ===========
