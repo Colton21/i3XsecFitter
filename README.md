@@ -19,6 +19,16 @@ After calculating you want the state to be saved, so run with --cache unless you
 
 For ease of use, also use '--auto', which will run over both selections, both fluxes, and a hard-coded range of normalisations. 
 
+The Earth Model PREM can also be modified up or down.
+This is configured just in the core region, as this is the region where we have the least amount of information.
+
+```python3 earth_model.py --up --down```
+
+The new earth model files can be fed into the propagation code with:
+
+```--earth prem_file```
+
+
 Reweighting
 =============
 
