@@ -76,7 +76,8 @@ def ConfigFlux(neutrino_flavours, c_zen_nodes, energy_nodes, flux_type, mode, ga
     return InitialFlux
 
 
-def propagate_events(xsec_norm, flux_type, mode, cache, auto=False, gamma_factor='default'):
+def propagate_events(xsec_norm, flux_type, mode, cache, 
+                     earth='default', auto=False, gamma_factor='default'):
     neutrino_flavours = 3
     energy_nodes = set_energy()
     c_zen_nodes = set_angle()
@@ -96,6 +97,16 @@ def propagate_events(xsec_norm, flux_type, mode, cache, auto=False, gamma_factor
     interactions = True
     nuSQ = nsq.nuSQUIDSAtm(c_zen_nodes, energy_nodes, neutrino_flavours, nsq.NeutrinoType.both, interactions)
     xs_obj = nsq.NeutrinoDISCrossSectionsFromTables(xsec_file)
+
+    if earth != 'default':
+        if not os.path.exists(earth):
+            raise FileNotFoundError(f'{earth} not found!')
+        earth_atm = nsq.EarthAtm(earth)
+        nuSQ.Set_EarthModel(earth_atm)
+        earth_setting = earth.split('_')[3]
+        earth_setting = earth_setting.split('.')[0]
+        earth_setting = earth_setting.lower()
+
     nuSQ.SetNeutrinoCrossSections(xs_obj)
     nuSQ.Set_MixingParametersToDefault()
     nuSQ.Set_initial_state(np.array(InitialFlux),  nsq.Basis.flavor)
@@ -111,13 +122,19 @@ def propagate_events(xsec_norm, flux_type, mode, cache, auto=False, gamma_factor
     nuSQ.EvolveState()
     ####################
 
+    base_path = '../../nuSQuIDS_propagation_files'
     if cache == True:
-        if gamma_factor == 'default':
-            outfile_name = f'../nuSQuIDS_propagation_files/nuSQuIDS_flux_cache_{xsec_norm}_{flux_type}_{mode}.hdf'
-        else:            
-            outfile_name = f'../nuSQuIDS_propagation_files/nuSQuIDS_flux_cache_{xsec_norm}_{gamma_factor}_{flux_type}_{mode}.hdf'
-        nuSQ.WriteStateHDF5(os.path.join(os.path.dirname(os.path.abspath(__file__)), outfile_name), True)
-        print(f'Created outfile_name')
+        if gamma_factor == 'default' and earth=='default':
+            outfile_name = f'{base_path}/nuSQuIDS_flux_cache_{xsec_norm}_{flux_type}_{mode}.hdf'
+        
+        elif gamma_factor != 'default':            
+            outfile_name = f'{base_path}/nuSQuIDS_flux_cache_{xsec_norm}_{gamma_factor}_{flux_type}_{mode}.hdf'
+        
+        elif earth != 'default':
+            outfile_name = f'{base_path}/nuSQuIDS_flux_cache_{xsec_norm}_{earth_setting}_{flux_type}_{mode}.hdf'
+        nuSQ.WriteStateHDF5(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                            outfile_name), True)
+        print(f'Created {outfile_name}')
     
     ## issue with nuSQ being picklable when 
     ## running with parallel processing
@@ -131,15 +148,18 @@ def propagate_events(xsec_norm, flux_type, mode, cache, auto=False, gamma_factor
 @click.option('--flux_type', '-f', type=click.Choice(['atmo', 'astro', 'all']))
 @click.option('--mode', '-m', type=click.Choice(['track', 'cascade']))
 @click.option('--gamma', '-g', default='default')
+@click.option('--earth', '-e', default='default')
 @click.option('--cache', is_flag=True)
 @click.option('--auto', is_flag=True)
-def main(xsec_norm, flux_type, mode, cache, auto, gamma):
+def main(xsec_norm, flux_type, mode, cache, earth, auto, gamma):
     
     gamma_factor = gamma
     if gamma_factor != 'default':
         gamma_factor = float(gamma_factor)
 
-    norm_list = [0.985, 0.99, 0.995, 1.005, 1.01, 1.015]
+    #norm_list = [0.985, 0.99, 0.995, 1.005, 1.01, 1.015]
+    norm_list = [0.7, 0.8, 0.9, 0.98, 0.985, 0.99, 0.995, 
+                 1.005, 1.01, 1.015, 1.02, 1.1, 1.2, 1.3]
 
     if auto:
         print("Automatically Handling Separated Flux Propagation For Tracks and Cascades for all listed normalisations")
@@ -154,7 +174,9 @@ def main(xsec_norm, flux_type, mode, cache, auto, gamma):
                 for t in types:
                     for n in norm_list:
                         futures.append(executor.submit(
-                            propagate_events, n, t, m, cache=True, auto=auto, gamma_factor=gamma_factor))
+                            propagate_events, n, t, m, 
+                            cache=True, auto=auto, earth=earth,
+                            gamma_factor=gamma_factor))
         results = wait(futures)
         for result in results.done:
             print(result.result())
@@ -162,7 +184,8 @@ def main(xsec_norm, flux_type, mode, cache, auto, gamma):
     if not auto:
         if not cache:
             print("=== WARNING - nuSQ State will not be saved! To save, use --cache ===")
-        nuSQ = propagate_events(xsec_norm, flux_type, mode, cache, gamma_factor=gamma_factor)
+        nuSQ = propagate_events(xsec_norm, flux_type, mode, cache, 
+                                earth=earth, gamma_factor=gamma_factor)
 
     print("Done")
 
