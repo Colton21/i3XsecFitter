@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 import click
 import sys, os
@@ -81,12 +82,13 @@ def main(input_file, selection):
     _df['reco_energy_fit_status'] = [0] * len(e_exists)
     _df['reco_dir_fit_status'] = [0] * len(d_exists)
 
-
+    date = datetime.now().strftime('%Y-%m-%d')
     ##nnm fit needs the name of the weight to be something specific?
     ##looks like it should be the flux name
     _df['mceq_conv_H3a_SIBYLL23c'] = nnm_w_atmo
+    _df['mceq_conv_H4a_SIBYLL23c'] = nnm_w_atmo
     _df['powerlaw'] = nnm_w_astro
-    _df.to_hdf('test.hdf', key='nnmfit', mode='w')
+    _df.to_hdf(f'{selection}_{date}.hdf', key='nnmfit', mode='w')
 
 if __name__ == "__main__":
     main()
