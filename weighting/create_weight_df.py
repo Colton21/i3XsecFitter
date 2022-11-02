@@ -1,7 +1,7 @@
 # used for parsing inputs
 from optparse import OptionParser
 # used for verifying files exist
-import os
+import sys, os
 import numpy as np
 import h5py
 from glob import glob
@@ -9,6 +9,7 @@ import click
 from tqdm import tqdm
 import pandas as pd
 import concurrent.futures
+import time
 from concurrent.futures import ProcessPoolExecutor, wait
 
 #####
@@ -20,7 +21,8 @@ from icecube import LeptonInjector
 import LeptonWeighter as LW
 #####
 
-##
+##local package
+sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter/')
 from event_info import EventInfo
 from event_info import CascadeInfo, TrackInfo
 from configs.config import config
@@ -127,7 +129,7 @@ def construct_lw_event(frame):
     return LWevent
 
 ## LeptonWeighter weight_event depends on input flux - select for track/cascade & atmo/astro fluxes
-def construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_type):
+def construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_type, earth):
     net_generation = []
     for lic in licfiles:
         net_generation += LW.MakeGeneratorsFromLICFile( lic )
@@ -146,14 +148,21 @@ def construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_t
 
     print("Load Pre-calculated nuSQuIDS Flux Files")
     weight_event_list = []
+    
     for norm in norm_list:
-        flux = LW.nuSQUIDSAtmFlux(os.path.join(os.path.dirname(os.path.abspath(__file__)), f'{flux_path}{norm}_{f_type}_{selection}.hdf'))
+        if earth == 'normal':
+            f_str = f'nuSQuIDS_flux_cache_{norm}_{f_type}_{selection}.hdf'
+        elif earth == 'up' or earth == 'down':
+            f_str = f'nuSQuIDS_flux_cache_{norm}_{earth}_{f_type}_{selection}.hdf'        
+
+        flux = LW.nuSQUIDSAtmFlux(os.path.join(flux_path, f_str))
         weighter = LW.Weighter(flux, xs, net_generation)
         weight_event_list.append(weighter)
 
     return weight_event_list
 
-def calculate_weights(i3files, licfiles, liveTime, flux_path, selection, CCNC, norm_list, f_type, splineList):
+def calculate_weights(i3files, licfiles, liveTime, flux_path, selection, CCNC, 
+                      norm_list, f_type, splineList, earth):
     
     ## create empty storage object to manage information
     eventInfo = EventInfo()
@@ -162,13 +171,18 @@ def calculate_weights(i3files, licfiles, liveTime, flux_path, selection, CCNC, n
     ## weights depend on input flux
     ## either use merged flux or separate
     if f_type == 'all':
-        weight_event_list = construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_type)
+        weight_event_list = construct_weight_events(licfiles, flux_path, selection, 
+                                                    CCNC, norm_list, f_type, earth)
         for norm in norm_list:
             setattr(eventInfo, f'weight{norm}', [])
         splineList = splineList[0]
     else:
-        weight_event_list_atmo  = construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_type='atmo')
-        weight_event_list_astro = construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_type='astro')
+        weight_event_list_atmo  = construct_weight_events(licfiles, flux_path, 
+                                                          selection, CCNC, norm_list, 
+                                                          earth=earth, f_type='atmo')
+        weight_event_list_astro = construct_weight_events(licfiles, flux_path, 
+                                                          selection, CCNC, norm_list, 
+                                                          earth=earth, f_type='astro')
         for norm in norm_list:
             setattr(eventInfo, f'weight{norm}_atmo',  [])
             setattr(eventInfo, f'weight{norm}_astro', [])
@@ -397,15 +411,20 @@ def build_path(dataset, selection='track'):
     return i3_file_path, lic_file_path
 
 
-def process_files(i3file_dir, licfile_dir, flux_path, selection, num_files, liveTime, w_dir, norm_list, f_type):
+def process_files(i3file_dir, licfile_dir, flux_path, selection, num_files, 
+                  liveTime, w_dir, norm_list, f_type, earth):
     
     if f_type == 'all':
-        splineList, norm_list = initPropFiles(flux_path, norm_list, f_type='all', selection=selection)
+        splineList, norm_list = initPropFiles(flux_path, norm_list, 
+                                              f_type='all', selection=selection,
+                                              earth=earth)
         splineList = [splineList]
     else:
-        splineListAtmo,  norm_list = initPropFiles(flux_path, norm_list, f_type='atmo',  selection=selection)
+        splineListAtmo,  norm_list = initPropFiles(flux_path, norm_list, f_type='atmo',  
+                                                   selection=selection, earth=earth)
         print(f'Atmo: {norm_list}')
-        splineListAstro, norm_list = initPropFiles(flux_path, norm_list, f_type='astro', selection=selection)
+        splineListAstro, norm_list = initPropFiles(flux_path, norm_list, f_type='astro',
+                                                   selection=selection, earth=earth)
         print(f'Astro: {norm_list}')
         splineList = [splineListAtmo, splineListAstro]
     
@@ -430,7 +449,9 @@ def process_files(i3file_dir, licfile_dir, flux_path, selection, num_files, live
             CCNC = 'GR'
         print(f'Dataset: {dataset_num}, CC/NC:{CCNC}')
         i3files, licfiles, datasetList, runList = get_files(i3file_dir, licfile_dir, num_files, selection, CCNC)
-        eventInfo, recoInfo = calculate_weights(i3files, licfiles, liveTime, flux_path, selection, CCNC, norm_list, f_type, splineList)
+        eventInfo, recoInfo = calculate_weights(i3files, licfiles, liveTime, flux_path, 
+                                                selection, CCNC, norm_list, f_type, 
+                                                splineList, earth)
         ccncList = [CCNC] * len(eventInfo.nu_energy) ##just pick anything
         liveTimeL = [liveTime] * len(eventInfo.nu_energy)
         selectionList = [selection] * len(eventInfo.nu_energy)
@@ -440,23 +461,44 @@ def process_files(i3file_dir, licfile_dir, flux_path, selection, num_files, live
         data.update({'Selection': selectionList, 'IntType': ccncList, 'LiveTime': liveTimeL})
         data.update(recoInfo.__dict__)
         df = pd.DataFrame(data=data)
-        df.to_hdf(os.path.join(w_dir, f'weight_df_{datasetList[0]}_{selection}_{CCNC}.hdf'), key='df', mode='w')
-        print(f'Created: weight_df_{datasetList[0]}_{selection}_{CCNC}.hdf')
+        if earth == 'normal':
+            f_str = f'weight_df_{datasetList[0]}_{selection}_{CCNC}.hdf'
+        else:
+            f_str = f'weight_df_{datasetList[0]}_{earth}_{selection}_{CCNC}.hdf'
+        df.to_hdf(os.path.join(w_dir, f_str), key='df', mode='w')
+        print(f'Created: {f_str}')
         print(len(df.index.values))
 
-def analysis_wrapper(dataset, selection, do_all, flux_path, num_files, f_type):
+def analysis_wrapper(dataset, selection, do_all, flux_path, num_files, f_type, earth):
     pi = np.pi
     proton_mass = 0.93827231 #GeV
     liveTime = 3.1536e7 #365 days in seconds
     w_dir = '/data/user/chill/icetray_LWCompatible/weights'
-    norm_list = [0.2, 0.9, 0.95, 0.985, 0.99, 0.995, 1.0, 1.005, 1.01, 1.015, 1.05, 1.1, 5.0]
+    
+    ##norm list is used for finding the nuSQuIDS propagation files
+    ##use default PREM
+    if earth == 'normal':
+        norm_list = [0.2, 0.9, 0.95, 0.985, 0.99, 0.995, 1.0, 
+                     1.005, 1.01, 1.015, 1.05, 1.1, 5.0]
+    ##use modified PREM
+    elif earth == 'up' or earth == 'down':
+        norm_list = [0.7, 0.8, 0.9, 0.98, 0.985, 0.99, 0.995,
+                     1.005, 1.01, 1.015, 1.02, 1.1, 1.2, 1.3]        
+    else:
+        raise ValueError(f'Option for earth {earth} not valid! Use up or down')
+    print(f'Running with norms = {norm_list}')
+    time.sleep(2)
+
+    if flux_path == None:
+        flux_path = config.fluxPath
 
     ##if dataset is None and do_all is True - grabs all files for 1 selection
     i3file_dirs, licfile_dirs = valid_dir(dataset, selection, do_all)
     
     ##if do_all is False, size of dirs list is 1
     if do_all == False:
-        process_files(i3file_dirs[0], licfile_dirs[0], flux_path, selection, num_files, liveTime, w_dir, norm_list, f_type)
+        process_files(i3file_dirs[0], licfile_dirs[0], flux_path, selection, 
+                      num_files, liveTime, w_dir, norm_list, f_type, earth)
         return
 
     ##start multi-threading here
@@ -464,7 +506,9 @@ def analysis_wrapper(dataset, selection, do_all, flux_path, num_files, f_type):
         futures = []
         ##loop over all datasets, CCNC
         for i3file_dir, licfile_dir in zip(i3file_dirs, licfile_dirs):
-            futures.append(executor.submit(process_files, i3file_dir, licfile_dir, flux_path, selection, num_files, liveTime, w_dir, norm_list, f_type))
+            futures.append(executor.submit(process_files, i3file_dir, licfile_dir, 
+                                           flux_path, selection, num_files, liveTime, 
+                                           w_dir, norm_list, f_type, earth))
     results = wait(futures)
     for result in results.done:
         print(result.result())
@@ -473,11 +517,13 @@ def analysis_wrapper(dataset, selection, do_all, flux_path, num_files, f_type):
 @click.option('--dataset', '-d', default=None)
 @click.option('--selection', '-s', default='track', type=click.Choice(['track', 'cascade']))
 @click.option('--do_all', is_flag=True)
-@click.option('--flux_path', '-f', default='../nuSQuIDS_propagation_files/nuSQuIDS_flux_cache_')
+@click.option('--flux_path', '-f', default=None)
 @click.option('--num_files', '-n', default=-1)
 @click.option('--f_type', '-f', default='separate', type=click.Choice(['separate', 'all']))
-def main(dataset, selection, do_all, flux_path, num_files, f_type):
-    analysis_wrapper(dataset, selection, do_all, flux_path, num_files, f_type)
+@click.option('--earth', '-e', default='normal')
+def main(dataset, selection, do_all, flux_path, num_files, f_type, earth):
+    analysis_wrapper(dataset, selection, do_all, flux_path, num_files, f_type, earth)
+    print("Done")
 
 if __name__ == "__main__":
     main()

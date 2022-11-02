@@ -20,4 +20,6 @@ class config:
     ### https://arxiv.org/pdf/2001.09520.pdf
     cascade_atmo_norm = 1.07
 
+    fluxPath = '/data/user/chill/icetray_LWCompatible/nuSQuIDS_propagation_files'
+
 ##end
