@@ -1,0 +1,26 @@
+# Header
+Universe                = vanilla
+#JobNotification         = ALWAYS
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT
+getenv                  = true
+request_memory          = 2 GB
+request_disk            = 1 GB
+
+# Workspace
+workspace               = /scratch/chill/nuSQuIDS
+
+# The script
+Executable              = /data/user/chill/icetray_LWCompatible/i3XsecFitter/fluxes/condor/propagate_flux.py
+#Arguments               = -n $(norm) -g $(gamma) -f $(flux)
+Arguments               = -n $(norm) -f $(flux)
+
+# Logs
+#Output                  = $(workspace)/logs/prop_n$(norm)_g$(gamma)_$(flux).out
+#Error                   = $(workspace)/logs/prop_n$(norm)_g$(gamma)_$(flux).err
+#Log                     = $(workspace)/logs/prop_n$(norm)_g$(gamma)_$(flux).log
+Output                  = $(workspace)/logs/prop_n$(norm)_$(flux).out
+Error                   = $(workspace)/logs/prop_n$(norm)_$(flux).err
+Log                     = $(workspace)/logs/prop_n$(norm)_$(flux).log
+
+queue
