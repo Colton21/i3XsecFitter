@@ -87,6 +87,7 @@ class TrackInfo(object):
 class DataEventInfo(object):
     def __init__(self):
         self.live_time = []
+        self.year = []
         self.run = []
         self.sub_run = []
         self.event = []
