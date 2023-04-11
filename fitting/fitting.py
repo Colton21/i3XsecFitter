@@ -20,14 +20,19 @@ def translatePDGtoInfo(pdgList):
     return flavList, nnbarList
 
 ##open all nuSQuIDS cached states to create spline
-def initPropFiles(flux_path, norm_list, f_type, selection):
-    print(f'Opening nuSQuIDS files for {f_type}, {selection} (n = {len(norm_list)})')
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    start_path = os.path.join(this_path, '../')
-    glob_str = os.path.join(start_path, f'{flux_path}*_{f_type}_{selection}.hdf')
+def initPropFiles(flux_path, norm_list, f_type, selection, earth):
+    print(f'Opening nuSQuIDS files for {f_type}, {selection} (n_norms = {len(norm_list)})')
+    #this_path = os.path.dirname(os.path.abspath(__file__))
+    #start_path = os.path.join(this_path, '../')
+    #glob_str = os.path.join(start_path, f'*_{f_type}_{selection}.hdf')
+    if earth == 'normal':
+        f_str = f'nuSQuIDS_flux_cache_*_{f_type}_{selection}.hdf'
+    elif earth == 'up' or earth == 'down':
+        f_str = f'nuSQuIDS_flux_cache_*_{earth}_{f_type}_{selection}.hdf'    
+    glob_str = os.path.join(flux_path, f_str)
     fileList = sorted(glob.glob(glob_str))
     if len(fileList) == 0:
-        raise IOError(f'glob could not file any files at {glob_str}')
+        raise IOError(f'glob could not find any files at {glob_str}')
     splineList, normList = createAllNSQ(fileList, norm_list)
     return splineList, normList
 
