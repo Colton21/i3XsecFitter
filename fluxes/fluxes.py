@@ -20,12 +20,16 @@ def InitAtmFlux(mode='modern'):
     return atm_flux 
 
 def AtmFlux(atm_flux, e, z, flavour, flag=None, spectrum=-2.4):
+    if flag != 'simple' and spectrum != -2.4:
+        raise NotImplementedError('If you want to modify the spectrum, \
+                                    must run with manual simple model!')
+
     if flag == None:
         if atm_flux is None:
             raise ValueError("Initialise flux first, then pass into AtmFlux")
         f_atm = atm_flux.getFlux(flavour, e, z)
         
-    if flag == 'simple':
+    elif flag == 'simple':
         ## -3.5 +/- 0.1, 0.2
         eprior = 100e3
         norm = 2.e-18        
