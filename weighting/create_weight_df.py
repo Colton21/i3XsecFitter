@@ -152,7 +152,7 @@ def construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_t
     for norm in norm_list:
         if earth == 'normal':
             f_str = f'nuSQuIDS_flux_cache_{norm}_{f_type}_{selection}.hdf'
-        elif earth == 'up' or earth == 'down':
+        else:
             f_str = f'nuSQuIDS_flux_cache_{norm}_{earth}_{f_type}_{selection}.hdf'        
 
         flux = LW.nuSQUIDSAtmFlux(os.path.join(flux_path, f_str))
@@ -262,7 +262,8 @@ def calculate_weights(i3files, licfiles, liveTime, flux_path, selection, CCNC,
                     _l_astro.append(weight_astro)
 
             ## collect other information from the event
-            eventInfo, recoInfo = extract_event_info(eventInfo, recoInfo, frame, lwEvent, dataset, run, selection, atm_flux)
+            eventInfo, recoInfo = extract_event_info(eventInfo, recoInfo, frame, 
+                                        lwEvent, dataset, run, selection, atm_flux)
     
     ##open the nuSQuIDS propagation files - hold them in memory, then fit
     if f_type == 'all':
@@ -453,7 +454,7 @@ def process_files(i3file_dir, licfile_dir, flux_path, selection, num_files,
                                                 selection, CCNC, norm_list, f_type, 
                                                 splineList, earth)
         ccncList = [CCNC] * len(eventInfo.nu_energy) ##just pick anything
-        liveTimeL = [liveTime] * len(eventInfo.nu_energy)
+        liveTimeL = [liveTime] * len(eventInfo.nu_energy) ##just 1 year arbitrarily
         selectionList = [selection] * len(eventInfo.nu_energy)
 
         ##unpack eventInfoList - items to save in the dataframe
@@ -481,9 +482,10 @@ def analysis_wrapper(dataset, selection, do_all, flux_path, num_files, f_type, e
         norm_list = [0.2, 0.9, 0.95, 0.985, 0.99, 0.995, 1.0, 
                      1.005, 1.01, 1.015, 1.05, 1.1, 5.0]
     ##use modified PREM
-    elif earth == 'up' or earth == 'down':
-        norm_list = [0.7, 0.8, 0.9, 0.98, 0.985, 0.99, 0.995,
-                     1.005, 1.01, 1.015, 1.02, 1.1, 1.2, 1.3]        
+    elif earth in ['core_up', 'core_down', 'all_up', 'all_down']:
+        #norm_list = [0.7, 0.8, 0.9, 0.98, 0.985, 0.99, 0.995,
+        #             1.005, 1.01, 1.015, 1.02, 1.1, 1.2, 1.3]        
+        norm_list = [1.0]        
     else:
         raise ValueError(f'Option for earth {earth} not valid! Use up or down')
     print(f'Running with norms = {norm_list}')
