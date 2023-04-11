@@ -1,0 +1,16 @@
+JOB nuSQuIDS_propagate_1_all_up_astro propagate_earth.submit
+VARS nuSQuIDS_propagate_1_all_up_astro norm="100" flux="astro" type="prop" earth="ALL_UP"
+JOB nuSQuIDS_propagate_1_all_up_atmo propagate_earth.submit
+VARS nuSQuIDS_propagate_1_all_up_atmo norm="100" flux="atmo" type="prop" earth="ALL_UP"
+JOB nuSQuIDS_propagate_1_all_down_astro propagate_earth.submit
+VARS nuSQuIDS_propagate_1_all_down_astro norm="100" flux="astro" type="prop" earth="ALL_DOWN"
+JOB nuSQuIDS_propagate_1_all_down_atmo propagate_earth.submit
+VARS nuSQuIDS_propagate_1_all_down_atmo norm="100" flux="atmo" type="prop" earth="ALL_DOWN"
+JOB nuSQuIDS_propagate_1_core_down_astro propagate_earth.submit
+VARS nuSQuIDS_propagate_1_core_down_astro norm="100" flux="astro" type="prop" earth="CORE_DOWN"
+JOB nuSQuIDS_propagate_1_core_down_atmo propagate_earth.submit
+VARS nuSQuIDS_propagate_1_core_down_atmo norm="100" flux="atmo" type="prop" earth="CORE_DOWN"
+JOB nuSQuIDS_propagate_1_core_up_astro propagate_earth.submit
+VARS nuSQuIDS_propagate_1_core_up_astro norm="100" flux="astro" type="prop" earth="CORE_UP"
+JOB nuSQuIDS_propagate_1_core_up_atmo propagate_earth.submit
+VARS nuSQuIDS_propagate_1_core_up_atmo norm="100" flux="atmo" type="prop" earth="CORE_UP"
