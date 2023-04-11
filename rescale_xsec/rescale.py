@@ -4,7 +4,7 @@ import os, sys
 import matplotlib.pyplot as plt
 import click
 
-os.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter/')
+sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter/')
 from configs.config import config
 
 def open_default(path="/data/user/chill/snowstorm_nugen_ana/xsec/data/csms.h5"):
