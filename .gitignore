@@ -1,0 +1,14 @@
+ # Byte-compiled / optimized / DLL files
+ __pycache__/
+
+configs/__pycache__/
+fitting/__pycache__/
+fluxes/__pycache__/
+helper/__pycache__/
+mc_studies/__pycache__/
+weighting/__pycache__/
+
+*.dat
+*.pdf
+*.png
+*.hdf
