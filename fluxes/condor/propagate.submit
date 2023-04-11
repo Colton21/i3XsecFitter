@@ -4,7 +4,7 @@ Universe                = vanilla
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT
 getenv                  = true
-request_memory          = 2 GB
+request_memory          = 4 GB
 request_disk            = 1 GB
 
 # Workspace
