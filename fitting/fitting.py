@@ -11,7 +11,7 @@ sys.path.append('/data/user/chill/nuSQuIDS/resources/python/bindings/')
 import nuSQUIDSpy as nsq
 import nuSQUIDSTools
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../'))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../weighting/'))
 from event_info import EventInfo
 
 def translatePDGtoInfo(pdgList):
@@ -26,7 +26,8 @@ def initPropFiles(flux_path, norm_list, f_type, selection, earth):
     #start_path = os.path.join(this_path, '../')
     #glob_str = os.path.join(start_path, f'*_{f_type}_{selection}.hdf')
     if earth == 'normal':
-        f_str = f'nuSQuIDS_flux_cache_*_{f_type}_{selection}.hdf'
+        #f_str = f'nuSQuIDS_flux_cache_*_{f_type}_{selection}.hdf'
+        f_str = f'nuSQuIDS_flux_cache_*_toleranceUp_-2.37_{f_type}.hdf'
     elif earth == 'up' or earth == 'down':
         f_str = f'nuSQuIDS_flux_cache_*_{earth}_{f_type}_{selection}.hdf'    
     glob_str = os.path.join(flux_path, f_str)
@@ -36,25 +37,36 @@ def initPropFiles(flux_path, norm_list, f_type, selection, earth):
     splineList, normList = createAllNSQ(fileList, norm_list)
     return splineList, normList
 
-def createNSQ(filename):
+def createNSQ(filename, norm_list=None):
     if os.path.exists(filename):
         bname = os.path.basename(filename)
         split = bname.split('_')
         norm = float(split[3])
+        if norm_list != None:
+            if norm not in norm_list:
+                return None, norm
+        ##if norm is in the list, or no list given
+        print(f'Opened: {filename}')
         return nsq.nuSQUIDSAtm(filename), norm
     else:
         raise IOError(f'{filename} does not exist!')
 
-def createAllNSQ(fileList, norm_list=None):
+def createAllNSQ(fileList, norm_list=[None]):
     nuSQList = []
     normList = []
+
+    int_norm_list = []
+    if norm_list[0] != None:
+        for _n in norm_list:
+            int_norm_list.append(float(_n))
+
     for filename in fileList:
-        nuSQ, norm = createNSQ(filename)
+        nuSQ, norm = createNSQ(filename, int_norm_list)
         if norm == 5:
-            #print(f'Skipping sigma_n = 5 for fitting!')
+            print(f'Skipping sigma_n = 5 for fitting!')
             continue
         if norm == 0.2:
-            #print(f'Skipping sigma_n = 0.2 for fitting!')
+            print(f'Skipping sigma_n = 0.2 for fitting!')
             continue
         if norm < 0:
             continue
@@ -88,7 +100,7 @@ def exp_func(x, exponent, norm):
 
 def getFitFlag(e, cosz):
     fitFlags = ['exp'] * len(e)
-    e_mask = e <= 1e14
+    e_mask = e <= 2e13
     z_mask = cosz >= 0
     mask = np.logical_or(e_mask, z_mask)
     fitFlags = np.asarray(fitFlags)
@@ -100,8 +112,25 @@ def runFit(normList, propW, fitFlag):
         p0 = [-1, np.mean(propW)]
         popt, pcov = curve_fit(linear_func, normList, propW, p0=p0)
     elif fitFlag == 'exp':
-        p0 = [-1, np.mean(propW)]
-        popt, pcov = curve_fit(exp_func, normList, propW, p0=p0)
+        p0 = [-10, np.mean(propW)]
+        try:
+            popt, pcov = curve_fit(exp_func, normList, propW, p0=p0)
+        except:
+            try:
+                print('Trying to fit with steeper slope')
+                p0[0] = -150
+                popt, pcov = curve_fit(exp_func, normList, propW, p0=p0)
+            except:
+                try:
+                    print('Trying other method')
+                    p0[1] = propW[-1]
+                    popt, pcov = curve_fit(exp_func, normList, propW, p0=p0)
+                except:
+                    print(f'Error in curve_fit! Debug fitting with {fitFlag}:')
+                    print(f'norm list: {normList}')
+                    print(f'prop weight: {propW}')
+                    print(f'p0: {p0}')
+                    exit(1)
     else:
         raise ValueError(f'No valid fitFlag {fitFlag}!')
     return popt
@@ -136,7 +165,7 @@ def propWeightFit(eventInfo, splineList, normList, sType='none'):
     for e, cosz, fitFlag, flav, nnbar, flux in tqdm(zip(eList, coszList, fitFlags, flavs, nnbars, fluxes)):
         propW = np.ones(len(splineList))
         for i, nuSQ in enumerate(splineList):
-            w = nuSQ.EvalFlavor(int(flav), cosz, e, int(nnbar))
+            w = nuSQ.EvalFlavor(int(flav), cosz, e, int(nnbar)) * normList[i]
             propW[i] = w / flux
         popt = runFit(normList, propW, fitFlag) 
 
