@@ -8,11 +8,11 @@ n_spacing=2
 parallelcounter=0
 
 jobtype="prop"
-FLUX='astro'
+FLUX='atmo'
 echo $FLUX
 
 # fields
-dagfile="/scratch/chill/nuSQuIDS/propagate.dag"
+dagfile="/scratch/chill/nuSQuIDS/propagate_${FLUX}.dag"
 jobname='nuSQuIDS_propagate'
 jobcounter=0
 
@@ -25,7 +25,7 @@ for ((n = $normmin; n <= $normmax; n++))
 do
     if [ $(( $n % $n_spacing )) -eq 0 ]
     then
-        jobid=$jobname\_$n\_$g\_$FLUX
+        jobid=$jobname\_$n\_$FLUX
         norm=$n
         flux=$FLUX
         echo $jobid

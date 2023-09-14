@@ -117,8 +117,14 @@ def propagate_events(xsec_norm, flux_type, auto=False, gamma_factor='default',
     ##Sally set this to 1e-35! But she's not setting h_max -- not working
     ##I had it working with 1e-21, but this wasn't enough
     ##Eventually got 1e-27 working, but at 1e-31 on NPX output was 0 everywhere
-    nuSQ.Set_rel_error(1.0e-30)##needed high precision to avoid floating point errs
-    nuSQ.Set_abs_error(1.0e-30)##some example uses -17, others -7
+    if flux_type == 'atmo':    
+        nuSQ.Set_rel_error(1.0e-27)##needed high precision to avoid floating point errs
+        nuSQ.Set_abs_error(1.0e-27)##some example uses -17, others -7
+    elif flux_type == 'astro' or flux_type == 'all':    
+        nuSQ.Set_rel_error(1.0e-31)##needed high precision to avoid floating point errs
+        nuSQ.Set_abs_error(1.0e-31)##some example uses -17, others -7
+    else:
+        raise NotImplementedError(f'flux_type configuration bad: {flux_type}')
     nuSQ.Set_h_max(500.0*units.km)
     nuSQ.Set_TauRegeneration(True)
     nuSQ.Set_IncludeOscillations(True)
@@ -127,7 +133,13 @@ def propagate_events(xsec_norm, flux_type, auto=False, gamma_factor='default',
     nuSQ.EvolveState()
     ####################
 
-    outfile_name = f'/data/user/chill/icetray_LWCompatible/propagation_grid/output/nuSQuIDS_flux_cache_{xsec_norm}_{earth_setting}_{gamma_factor}_{flux_type}.hdf'
+    if earth != 'default':
+        outfile_name = f'/data/user/chill/icetray_LWCompatible/propagation_grid/output/nuSQuIDS_flux_cache_{xsec_norm}_{earth_setting}_{gamma_factor}_{flux_type}.hdf'
+    else:
+        if gamma_factor == 'default':
+            outfile_name = f'/data/user/chill/icetray_LWCompatible/propagation_grid/output/nuSQuIDS_flux_cache_{xsec_norm}_toleranceUp_{flux_type}.hdf'
+        else:
+            outfile_name = f'/data/user/chill/icetray_LWCompatible/propagation_grid/output/nuSQuIDS_flux_cache_{xsec_norm}_toleranceUp_{gamma_factor}_{flux_type}.hdf'
     nuSQ.WriteStateHDF5(outfile_name, True)
     print(f'Created {outfile_name}')
     return 0
