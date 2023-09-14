@@ -12,6 +12,7 @@ from helper.reco_helper import remove_bad_reco
 from weighting.create_weight_df_data import calc_live_time
 from configs.config import config
 
+##compare monte carlo to data (or MC to MC)
 def ratio_info(li, w_li, ng, w_ng, data, binning):
     binned_li = np.histogram(li, bins=binning, weights=w_li)[0]
     binned_ng = np.histogram(ng, bins=binning, weights=w_ng)[0]
@@ -19,6 +20,8 @@ def ratio_info(li, w_li, ng, w_ng, data, binning):
     r_li_err = r_li * np.sqrt(np.sqrt(binned_li)**2 / binned_li**2 + np.sqrt(data)**2 / data**2)
     r_ng = binned_ng / data
     r_ng_err = r_ng * np.sqrt(np.sqrt(binned_ng)**2 / binned_ng**2 + np.sqrt(data)**2 / data**2)
+
+    print(r_li)
     return r_li, r_li_err, r_ng, r_ng_err
         
 def saveHelper(fig, figname, year, subbin='', norm=False, dpi=None, ignore_close=False):
@@ -56,6 +59,11 @@ def saveHelper(fig, figname, year, subbin='', norm=False, dpi=None, ignore_close
             fig.savefig(os.path.join(yfigpath, f'{figname}_{year}.pdf'))
     if ignore_close == False:
         plt.close(fig)
+    
+    if dpi != None:        
+        print(f'Saved {figname}.png')
+    else:
+        print(f'Saved {figname}.pdf')
 
 def compare_reco(df_data_c, df_data_t, df_li_c, df_li_t, norm=False, f_type='all', 
                  ignore_nugen=True, best_fit=True): 
@@ -112,7 +120,7 @@ def compare_reco(df_data_c, df_data_t, df_li_c, df_li_t, norm=False, f_type='all
     
 def get_weights_info(df_data_c, df_data_t, df_li_c, df_li_t, norm=False,
                      f_type='all', year='total', 
-                     live_time_c=0, live_time_t=0, best_fit=True):
+                     live_time_c=0, live_time_t=0, best_fit=True, ignore_veto=False):
 
     if year != 'total':
         year = int(year)
@@ -129,8 +137,8 @@ def get_weights_info(df_data_c, df_data_t, df_li_c, df_li_t, norm=False,
     n_data_c = len(df_data_c.reco_energy.values)
     n_data_t = len(df_data_t.reco_energy.values)
 
-    print(f'-Live Time in Data [s] -: Tracks   = {live_time_t}')
-    print(f'-Live Time in Data [s] -: Cascades = {live_time_c}')
+    print(f'- Live Time in Data [s] -: Tracks   = {live_time_t}')
+    print(f'- Live Time in Data [s] -: Cascades = {live_time_c}')
     print('=== Data Num Cascades ===')
     print(f'{n_data_c} events, {n_data_c/live_time_t} event / live time')
     print('=== Data Num Tracks ===')
@@ -138,12 +146,9 @@ def get_weights_info(df_data_c, df_data_t, df_li_c, df_li_t, norm=False,
     print('='*10)
 
     ##scale lepton injector to data
-    ##with 10 yr burn sample, rough estimate of mis-match
-    fake_track_scale = 1.3
-    fake_cascade_scale = 1.65
     trackLiveTimeRatioLI   = live_time_t / df_li_t.LiveTime.values[0]
     cascadeLiveTimeRatioLI = live_time_c / df_li_c.LiveTime.values[0]
-    
+
     ##if atmo and astro weights are together
     if f_type == 'all':
         w_li_c = df_li_c['weight1.0'].values * cascadeLiveTimeRatioLI
@@ -159,7 +164,11 @@ def get_weights_info(df_data_c, df_data_t, df_li_c, df_li_t, norm=False,
 
     ##if atmo and astro weights are separate
     if f_type == 'separate':
-        w_li_c_atmo  = (df_li_c['weight1.0_atmo'].values * 
+        if ignore_veto == False:
+            w_li_c_atmo  = (df_li_c['weight1.0_atmo'].values * 
+                        cascadeLiveTimeRatioLI * cascade_atmo_norm * df_li_c['veto_pf'].values)
+        if ignore_veto == True:
+            w_li_c_atmo  = (df_li_c['weight1.0_atmo'].values * 
                         cascadeLiveTimeRatioLI * cascade_atmo_norm)
         w_li_t_atmo  = (df_li_t['weight1.0_atmo'].values * 
                         trackLiveTimeRatioLI * track_atmo_norm)
@@ -179,6 +188,37 @@ def get_weights_info(df_data_c, df_data_t, df_li_c, df_li_t, norm=False,
     if norm == True:
         w_li_c / n_li_c
         w_li_t / n_li_t
+    
+    ##total number of events in each MC sample
+    ##compared to total number in data
+    print(f'Monte Carlo Cascades: {n_li_c}, Data Cascades: {n_data_c}')
+    print(f'Ratio MC/Data = {(n_li_c / n_data_c):.2f}')
+    print(f'Monte Carlo Tracks  : {n_li_t}, Data Cascades: {n_data_t}')
+    print(f'Ratio MC/Data = {(n_li_t / n_data_t):.2f}')
+
+    ##with 10 yr burn sample, rough estimate of mis-match
+    #estimated
+    #fake_track_scale = 1.3
+    #fake_cascade_scale = 1.65
+    ##from ratio of events
+    fake_track_scale = n_li_t / n_data_t
+    fake_cascade_scale = n_li_c / n_data_c
+    
+    w_li_c       = w_li_c       * (1/fake_cascade_scale)
+    w_li_c_atmo  = w_li_c_atmo  * (1/fake_cascade_scale)
+    w_li_c_astro = w_li_c_astro * (1/fake_cascade_scale)
+    w_li_t       = w_li_t       * (1/fake_track_scale)
+    w_li_t_atmo  = w_li_t_atmo  * (1/fake_track_scale)
+    w_li_t_astro = w_li_t_astro * (1/fake_track_scale)
+
+    cascadeLiveTimeRatioLI = cascadeLiveTimeRatioLI * (1/fake_cascade_scale)
+    trackLiveTimeRatioLI   = trackLiveTimeRatioLI   * (1/fake_track_scale)
+
+    print('='*20)
+    print('WARNING - FAKE SCALING IS APPLIED!!!')
+    print(f'Tracks: {fake_track_scale}')
+    print(f'Cascade: {fake_cascade_scale}')
+    print('='*20)
 
     return w_li_c, w_li_c_atmo, w_li_c_astro, cascadeLiveTimeRatioLI, cascade_atmo_norm, \
            w_li_t, w_li_t_atmo, w_li_t_astro, trackLiveTimeRatioLI, track_atmo_norm
@@ -194,9 +234,9 @@ def year_by_year_plot(df_data_c, df_data_t, df_li_c, df_li_t, w_info, best_fit=F
     fig2t, ax2t = plt.subplots()
     fig1c, ax1c = plt.subplots()
     fig2c, ax2c = plt.subplots()
-    binning  = np.logspace(2, 8, 14)
+    binning  = np.logspace(2, 8, 28)
     bin_mids = (binning[1:] + binning[:-1])/2
-    zbinning = np.linspace(-1, 1, 14)
+    zbinning = np.linspace(-1, 1, 15)
     zbin_mids = (zbinning[1:] + zbinning[:-1])/2
 
     e_li_c = df_li_c.reco_energy.values
@@ -324,8 +364,11 @@ def prepare_plotting(df_data_c, df_data_t, df_li_c, df_li_t,
     z_data_t = np.cos(df_data_t.reco_zenith.values)
 
     ##start plotting
-    binning  = np.logspace(2, 8, 14)
-    zbinning = np.linspace(-1, 1, 14)
+    binning  = np.logspace(2, 8, 28)
+    ##original settings
+    zbinning_t = np.linspace(-1, 1, 15)
+    ##settings matching LLH
+    zbinning_c = np.linspace(-1, 1, 15)
 
     ##start binning data
     bin_mids = (binning[1:] + binning[:-1])/2
@@ -336,20 +379,21 @@ def prepare_plotting(df_data_c, df_data_t, df_li_c, df_li_t,
     d_vals_t = d_info_t[0]
     d_errs_t = np.sqrt(d_vals_t)
     
-    zbin_mids = (zbinning[1:] + zbinning[:-1])/2
-    d_zinfo_c = np.histogram(z_data_c, bins=zbinning)
+    zbin_mids_c = (zbinning_c[1:] + zbinning_c[:-1])/2
+    d_zinfo_c = np.histogram(z_data_c, bins=zbinning_c)
     d_zvals_c = d_zinfo_c[0]
     d_zerrs_c = np.sqrt(d_zvals_c)
-    d_zinfo_t = np.histogram(z_data_t, bins=zbinning)
+    zbin_mids_t = (zbinning_t[1:] + zbinning_t[:-1])/2
+    d_zinfo_t = np.histogram(z_data_t, bins=zbinning_t)
     d_zvals_t = d_zinfo_t[0]
     d_zerrs_t = np.sqrt(d_zvals_t)
 
     reco_plots(e_li_c, z_li_c, w_li_c, d_vals_c, d_errs_c, d_zvals_c, d_zerrs_c,
-               binning, zbinning, bin_mids, zbin_mids,
+               binning, zbinning_c, bin_mids, zbin_mids_c,
                y_livetime_c, opt='cascade', norm=norm, ignore_nugen=ignore_nugen,
                year=year)
     reco_plots(e_li_t, z_li_t, w_li_t, d_vals_t, d_errs_t, d_zvals_t, d_zerrs_t,
-               binning, zbinning, bin_mids, zbin_mids,
+               binning, zbinning_t, bin_mids, zbin_mids_t,
                y_livetime_t, opt='track', norm=norm, ignore_nugen=ignore_nugen,
                year=year)
     
@@ -391,11 +435,19 @@ def prepare_plotting(df_data_c, df_data_t, df_li_c, df_li_t,
     if f_type == 'separate': 
         separate_reco_plots(e_li_c, z_li_c, w_li_c_atmo, w_li_c_astro, 
                d_vals_c, d_errs_c, d_zvals_c, d_zerrs_c,
-               binning, zbinning, bin_mids, zbin_mids,
+               binning, zbinning_c, bin_mids, zbin_mids_c,
+               y_livetime_c, opt='cascade', norm=norm, year=year, skip_data=True)
+        separate_reco_plots(e_li_t, z_li_t, w_li_t_atmo, w_li_t_astro, 
+               d_vals_t, d_errs_t, d_zvals_t, d_zerrs_t,
+               binning, zbinning_t, bin_mids, zbin_mids_t,
+               y_livetime_t, opt='track', norm=norm, year=year, skip_data=True)
+        separate_reco_plots(e_li_c, z_li_c, w_li_c_atmo, w_li_c_astro, 
+               d_vals_c, d_errs_c, d_zvals_c, d_zerrs_c,
+               binning, zbinning_c, bin_mids, zbin_mids_c,
                y_livetime_c, opt='cascade', norm=norm, year=year)
         separate_reco_plots(e_li_t, z_li_t, w_li_t_atmo, w_li_t_astro, 
                d_vals_t, d_errs_t, d_zvals_t, d_zerrs_t,
-               binning, zbinning, bin_mids, zbin_mids,
+               binning, zbinning_t, bin_mids, zbin_mids_t,
                y_livetime_t, opt='track', norm=norm, year=year)
 
         ##try to find where there is excess in data over MC
@@ -417,19 +469,19 @@ def prepare_plotting(df_data_c, df_data_t, df_li_c, df_li_t,
             d_info_c = np.histogram(e_data_c, bins=binning)
             d_vals_c = d_info_c[0]
             d_errs_c = np.sqrt(d_vals_c)
-            d_zinfo_c = np.histogram(z_data_c, bins=zbinning)
+            d_zinfo_c = np.histogram(z_data_c, bins=zbinning_c)
             d_zvals_c = d_zinfo_c[0]
             d_zerrs_c = np.sqrt(d_zvals_c)
             subbin_str = f'bin{i}'
             separate_reco_plots(e_li_c, z_li_c, w_li_c_atmo, w_li_c_astro, 
                                 d_vals_c, d_errs_c, d_zvals_c, d_zerrs_c,
-                                binning, zbinning, bin_mids, zbin_mids, y_livetime_c,
+                                binning, zbinning_c, bin_mids, zbin_mids_c, y_livetime_c,
                                 opt='cascade', norm=norm, subbin=subbin_str, year=year)
 
 
 def separate_reco_plots(e_li, z_li, w_li_atmo, w_li_astro, d_vals, d_errs, d_zvals, d_zerrs,
                         binning, zbinning, bin_mids, zbin_mids, 
-                        y_livetime, opt, norm, subbin='', year='total'):
+                        y_livetime, opt, norm, subbin='', year='total', skip_data=False):
     if opt == 'track':
         label = 'Track'
     if opt == 'cascade':
@@ -448,7 +500,7 @@ def separate_reco_plots(e_li, z_li, w_li_atmo, w_li_astro, d_vals, d_errs, d_zva
     #### energy plots ####
 
     ##plot ratios if not normalised
-    if not norm:
+    if not norm and not skip_data:
         fig1 = plt.figure()
         gs = GridSpec(2, 1, height_ratios=[4, 1]) 
         ax1 = plt.subplot(gs[0, :]) 
@@ -457,33 +509,42 @@ def separate_reco_plots(e_li, z_li, w_li_atmo, w_li_astro, d_vals, d_errs, d_zva
     else:
         fig1, ax1 = plt.subplots()
         ax1.set_xlabel('(Deposited) Reco Energy [GeV]')
-        ax1.set_ylabel('Events (Normalised)')
+        if norm == True:
+            ax1.set_ylabel('Events (Normalised)')
+        else:
+            ax1.set_ylabel(f'Events per {y_livetime:.2f} yrs (IC86)')
 
     ### top plot ###
     ax1.hist(e_li, bins=binning, weights=w_li,       histtype='step', label=f'Total', color='royalblue')
     ax1.hist(e_li, bins=binning, weights=w_li_atmo,  histtype='step', label=f'Atmo',  color='goldenrod')
     ax1.hist(e_li, bins=binning, weights=w_li_astro, histtype='step', label=f'Astro', color='firebrick')
-    ax1.errorbar(bin_mids, d_vals, yerr=d_errs, xerr=np.diff(binning)/2, linewidth=0, color='black',
+    if skip_data == False:
+        ax1.errorbar(bin_mids, d_vals, yerr=d_errs, xerr=np.diff(binning)/2, linewidth=0, color='black',
                  marker='o', elinewidth=2, capsize=2, label=f'Data {label}')
     ax1.legend(title=f'{label}')
     ax1.set_yscale('log')
     ax1.set_xscale('log')
 
     ### bottom plot ###
-    if not norm:
+    if not norm and not skip_data:
         r_li, r_li_err, _, _ = ratio_info(e_li, w_li, 0 , 0, d_vals, binning)
         ax1_r.set_xscale('log')
         ax1_r.grid()
-        ax1_r.errorbar(bin_mids, r_li, yerr=r_li_err, xerr=np.diff(binning)/2, fmt='o', label=r'$R_{LI/DATA}$', color='royalblue')
+        ax1_r.errorbar(bin_mids, r_li, yerr=r_li_err, xerr=np.diff(binning)/2, fmt='o',
+                       label=r'$R_{LI/DATA}$', color='royalblue')
+        ax1_r.hlines(1.0, bin_mids[0], bin_mids[-1], linestyle='--', color='goldenrod')
         ax1_r.legend()
         ax1_r.set_xlabel('(Deposited) Reco Energy [GeV]')
         ax1_r.set_ylabel('Ratios')
-    saveHelper(fig1, f'simple_reco_energy_{opt}', year, subbin, norm)
+    if skip_data == True:   
+        saveHelper(fig1, f'simple_reco_energy_no_data_{opt}', year, subbin, norm)
+    else:   
+        saveHelper(fig1, f'simple_reco_energy_{opt}', year, subbin, norm)
 
     #### cos(z) plots ####
     
     ##plot ratios if not normalised
-    if not norm:
+    if not norm and not skip_data:
         fig1z = plt.figure()
         gs = GridSpec(2, 1, height_ratios=[4, 1]) 
         ax1z = plt.subplot(gs[0, :]) 
@@ -493,28 +554,44 @@ def separate_reco_plots(e_li, z_li, w_li_atmo, w_li_astro, d_vals, d_errs, d_zva
     else:
         fig1z, ax1z = plt.subplots()
         ax1z.set_xlabel(r'Reco cos($\theta_{z}$)')
-        ax1z.set_ylabel('Events (Normalised)')
+        if norm == True:
+            ax1z.set_ylabel('Events (Normalised)')
+        else:
+            ax1z.set_ylabel(f'Events per {y_livetime:.2f} yrs (IC86)')
 
     ### top plot ###
     ax1z.hist(z_li, bins=zbinning, weights=w_li,       histtype='step', label=f'Total', color='royalblue')
     ax1z.hist(z_li, bins=zbinning, weights=w_li_atmo,  histtype='step', label=f'Atmo',  color='goldenrod')
     ax1z.hist(z_li, bins=zbinning, weights=w_li_astro, histtype='step', label=f'Astro', color='firebrick')
-    ax1z.errorbar(zbin_mids, d_zvals, yerr=d_zerrs, xerr=np.diff(zbinning)/2, linewidth=0, color='black',
-                 marker='o', elinewidth=2, capsize=2, label=f'Data {label}')
+    if skip_data == False:
+        ax1z.errorbar(zbin_mids, d_zvals, yerr=d_zerrs, xerr=np.diff(zbinning)/2, 
+                      linewidth=0, color='black',
+                      marker='o', elinewidth=2, capsize=2, label=f'Data {label}')
     ax1z.legend(title=f'{label}')
     ax1z.set_yscale('log')
     ### bottom plot ###
     if not norm:
         r_li, r_li_err, _, _ = ratio_info(z_li, w_li, 0, 0, d_zvals, zbinning)
-        ax1z_r.grid()
-        ax1z_r.errorbar(zbin_mids, r_li, yerr=r_li_err, xerr=np.diff(zbinning)/2, fmt='o', label=r'$R_{LI/DATA}$', color='royalblue')
-        ax1z_r.legend()
-        ax1z_r.set_ylabel('Ratios')
+        if not skip_data:
+            ax1z_r.grid()
+            ax1z_r.errorbar(zbin_mids, r_li, yerr=r_li_err, xerr=np.diff(zbinning)/2, 
+                            fmt='o', label=r'$R_{LI/DATA}$', color='royalblue')
+            ax1z_r.hlines(1.0, zbin_mids[0], zbin_mids[-1], linestyle='--', color='goldenrod')
+            ax1z_r.legend()
+            ax1z_r.set_ylabel('Ratios')
         if subbin == '':
-            saveHelper(fig1z, f'simple_reco_zenith_log_{opt}', year, subbin, 
-                       norm, ignore_close=True)
+            if skip_data == True:
+                saveHelper(fig1z, f'simple_reco_zenith_log_no_data_{opt}', year, subbin, 
+                            norm, ignore_close=True)
+            else:
+                saveHelper(fig1z, f'simple_reco_zenith_log_{opt}', year, subbin, 
+                            norm, ignore_close=True)
             ax1z.set_yscale('linear')
-    saveHelper(fig1z, f'simple_reco_zenith_{opt}', year, subbin, norm)
+
+    if skip_data == True:
+        saveHelper(fig1z, f'simple_reco_zenith_no_data_{opt}', year, subbin, norm)
+    else:
+        saveHelper(fig1z, f'simple_reco_zenith_{opt}', year, subbin, norm)
 
 def reco_plots(e_li, z_li, w_li, d_vals, d_errs, d_zvals, d_zerrs,
                binning, zbinning, bin_mids, zbin_mids, 
@@ -555,6 +632,7 @@ def reco_plots(e_li, z_li, w_li, d_vals, d_errs, d_zvals, d_zerrs,
         ax1_r.set_xscale('log')
         ax1_r.grid()
         ax1_r.errorbar(bin_mids, r_li, yerr=r_li_err, xerr=np.diff(binning)/2, fmt='o', label=r'$R_{LI/DATA}$', color='royalblue')
+        ax1_r.hlines(1.0, bin_mids[0], bin_mids[-1], linestyle='--', color='goldenrod')
         ax1_r.legend()
         ax1_r.set_xlabel('(Deposited) Reco Energy [GeV]')
         ax1_r.set_ylabel('Ratios')
@@ -586,6 +664,7 @@ def reco_plots(e_li, z_li, w_li, d_vals, d_errs, d_zvals, d_zerrs,
         r_li, r_li_err, _, _ = ratio_info(z_li, w_li, 0, 0, d_zvals, zbinning)
         ax1z_r.grid()
         ax1z_r.errorbar(zbin_mids, r_li, yerr=r_li_err, xerr=np.diff(zbinning)/2, fmt='o', label=r'$R_{LI/DATA}$', color='royalblue')
+        ax1z_r.hlines(1.0, zbin_mids[0], zbin_mids[-1], linestyle='--', color='goldenrod')
         ax1z_r.legend()
         ax1z_r.set_ylabel('Ratios')
     saveHelper(fig1z, f'compare_reco_zenith_{opt}', year, norm=norm)
