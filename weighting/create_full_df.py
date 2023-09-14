@@ -15,15 +15,18 @@ def gather_files(dataset, selection, CCNC, modGamma=False, earth='normal'):
         raise NotImplementedError('Bad input to find file')
     if modGamma == False:
         if earth == 'normal':
-            df_file = glob(f'{mc_dir}/weight_df_0{dataset}_{selection}_{CCNC}.hdf')
+            glob_str = (f'{mc_dir}/weight_df_0{dataset}_{selection}_{CCNC}.hdf')
         if earth =='up' or earth == 'down':
-            df_file = glob(f'{mc_dir}/weight_df_0{dataset}_{earth}_{selection}_{CCNC}.hdf')
+            glob_str = (f'{mc_dir}/weight_df_0{dataset}_{earth}_{selection}_{CCNC}.hdf')
 
     if modGamma == True:
-        df_file = glob(f'{mc_dir}/weight_df_0{dataset}_{selection}_{CCNC}_modGamma.hdf')
+        glob_str = (f'{mc_dir}/weight_df_0{dataset}_{selection}_{CCNC}_modGamma.hdf')
+
+    df_file = glob(glob_str)
 
     print(df_file)
     if len(df_file) != 1:
+        print(f'Tried to find: {glob_str}')
         raise IOError(f'Num Files Found With Glob: {len(df_file)} != 1 !')
     df = pd.read_hdf(df_file[0])
     return df
