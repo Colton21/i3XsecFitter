@@ -141,8 +141,10 @@ def propagate_events(xsec_norm, flux_type, mode, cache,
 
     ##init some settings
     neutrino_flavours = 3
-    rel_error = 1.0e-27
-    abs_error = 1.0e-27
+    #rel_error = 1.0e-27
+    #abs_error = 1.0e-27
+    rel_error = 1.0e-28
+    abs_error = 1.0e-30
 
     energy_nodes = set_energy()
     c_zen_nodes = set_angle()
@@ -225,8 +227,8 @@ def main(xsec_norm, flux_type, mode, gamma, earth, ccnc, cache, auto):
         gamma_factor = float(gamma_factor)
 
     #norm_list = [0.985, 0.99, 0.995, 1.0, 1.005, 1.01, 1.015]
-    norm_list = [0.7, 0.8, 0.9, 0.98, 0.985, 0.99, 0.995, 
-                 1.0, 1.005, 1.01, 1.015, 1.02, 1.1, 1.2, 1.3]
+    norm_list = [0.6, 0.7, 0.8, 0.9, 0.98, 0.985, 0.99, 0.995, 
+                 1.0, 1.005, 1.01, 1.015, 1.02, 1.1, 1.2, 1.3, 1.4]
 
     ##default - use same CC & NC norm
     if ccnc == False:

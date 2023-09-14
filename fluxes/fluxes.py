@@ -19,7 +19,12 @@ def InitAtmFlux(mode='modern'):
     atm_flux = nuflux.makeFlux(model_option)
     return atm_flux 
 
+
+##e in GeV, z in cos(zenith)
+##flavour = pdg code
 def AtmFlux(atm_flux, e, z, flavour, flag=None, spectrum=-2.4):
+    if flavour not in [12, -12, 14, -14, 16, -16]:
+        raise NotImplementedError(f'flavour {flavour} must be the pdg code +/-(12, 14, 16)')
     if flag != 'simple' and spectrum != -2.4:
         raise NotImplementedError('If you want to modify the spectrum, \
                                     must run with manual simple model!')
