@@ -1,4 +1,4 @@
-from overlap_control import check_overlap_no_index
+from remove_overlap import check_overlap_no_index
 import matplotlib.pyplot as plt
 import click
 import numpy as np
@@ -85,6 +85,14 @@ def energy_breakdown(df_tracks, df_cascades, outdir):
                    hist_bins, title='Selected Flavour Rates vs True Energy',
                    outdir=outdir,
                    outfile='ccnc_true_energy_rate_all.pdf')
+    
+    ratehist1dfull([[df_track_nue_cc,  df_cascade_nue_cc],
+                   [df_track_numu_cc,  df_cascade_numu_cc],
+                   [df_track_nutau_cc, df_cascade_nutau_cc],
+                   [df_track_nc,       df_cascade_nc],],
+                   hist_bins, title='Selected Flavour Rates vs True Energy',
+                   outdir=outdir,
+                   outfile='ccnc_true_energy_rate_no_gr.pdf')
 
     scale_pts = [0.9, 1.0, 1.1]
     #scale_pts = [0.2, 1.0, 5.0]
@@ -681,7 +689,7 @@ def plot_summary(n_tracks, n_cascades, n_overlap, n_total, neutrino_type=None,
         neutrino_type = 'All Flavours'
     if ccnc == None:
         ccnc = 'CC+NC'
-    if verbose:
+    if verbose and (n_total[0] != 0 and n_total[1] != 0 and n_total[2] != 0):
         if use_weights == False:
             print(f"--- Unweighted {neutrino_type} : {ccnc} ---")
         if use_weights == True:
