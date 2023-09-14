@@ -18,6 +18,11 @@ class EventInfo(object):
         self.nu_y        = []
         self.nu_z        = []
 
+        ##required for calculating
+        ##passing fraction
+        self.i3pos       = []
+        self.i3dir       = []
+
         self.li_energy   = []
         self.li_azimuth  = []
         self.li_zenith   = []
@@ -27,8 +32,17 @@ class EventInfo(object):
         #self.fit_type   = []
         #self.fit_params = []
 
+        self.mmc_energy  = []
+
         self.flux_atmo  = []
         self.flux_astro = []
+    
+        self.ice_absorption = []
+        self.ice_scattering = []
+        self.dom_efficiency = []
+        self.ice_anisotropy_scale = []
+        self.hole_ice_forward_p0  = []
+        self.hole_ice_forward_p1  = []
 
 ##cascade specific info to be set
 ##for both data and MC
