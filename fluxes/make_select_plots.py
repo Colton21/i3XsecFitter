@@ -9,13 +9,7 @@ import matplotlib.pyplot as plt
 from fluxes import InitAtmFlux, AtmFlux, DiffFlux
 from propagate_flux import set_energy, set_angle
 from propagate_flux import ConfigFlux
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter')
 from configs.config import config
-
-#SQuIDS
-sys.path.append('/data/user/chill/SQuIDS/lib/')
-##nuSQuIDS libraries
-sys.path.append('/data/user/chill/nuSQuIDS/resources/python/bindings/')
 import nuSQUIDSpy as nsq
 import nuSQUIDSTools
 

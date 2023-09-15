@@ -4,10 +4,9 @@ import os, sys
 import matplotlib.pyplot as plt
 import click
 
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter/')
 from configs.config import config
 
-def open_default(path="/data/user/chill/snowstorm_nugen_ana/xsec/data/csms.h5"):
+def open_default(path=os.path.join(config.inner, "xsec/data/csms.h5")):
     if os.path.exists(path):
         t = tables.open_file(path)
     else:
@@ -30,7 +29,7 @@ def plot_vals_default(e_range, vals_list):
     ax1.set_yscale('log')
     ax1.legend()
     ax1.set_title('CSMS Cross Section')
-    fig1.savefig('/data/user/chill/snowstorm_nugen_ana/xsec/plots/csms_nominal.pdf')
+    fig1.savefig(os.path.join(config.inner, 'xsec/plots/csms_nominal.pdf'))
     plt.close(fig1)
 
 def plot_vals_scaled(e_range, vals_list, scaling, ccnc):
@@ -64,7 +63,7 @@ def plot_vals_scaled(e_range, vals_list, scaling, ccnc):
     ax1.set_yscale('log')
     ax1.legend()
     ax1.set_title('CSMS Cross Section')
-    fig1.savefig(f'/data/user/chill/snowstorm_nugen_ana/xsec/plots/csms_{ccnc}_{scaling}.pdf')
+    fig1.savefig(os.path.join(config.inner, f'xsec/plots/csms_{ccnc}_{scaling}.pdf'))
     plt.close(fig1)
 
 ##scaling for CC & NC are the same
@@ -91,14 +90,14 @@ def scale_table_CCNC(vals_list, name_list, scalingCC, scalingNC):
     return scaled_vals_list
 
 def save_scaled(scaled_vals_list, name_list, scaling):
-    filename = f'/data/user/chill/snowstorm_nugen_ana/xsec/data/csms_{scaling}.h5'
+    filename = os.path.join(config.inner, f'xsec/data/csms_{scaling}.h5')
     with tables.open_file(filename, 'w') as open_file:
             for name, vals in zip(name_list, scaled_vals_list):
                 open_file.create_array('/', str(name), vals, '')
     print(f"Finished creating table for scale: {scaling}")
 
 def save_scaled_CCNC(scaled_vals_list, name_list, scalingCC, scalingNC):
-    filename = f'/data/user/chill/snowstorm_nugen_ana/xsec/data/csms_{scalingCC}CC_{scalingNC}NC.h5'
+    filename = os.path.join(config.inner, f'xsec/data/csms_{scalingCC}CC_{scalingNC}NC.h5')
     with tables.open_file(filename, 'w') as open_file:
             for name, vals in zip(name_list, scaled_vals_list):
                 open_file.create_array('/', str(name), vals, '')

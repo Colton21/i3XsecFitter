@@ -21,7 +21,6 @@ import LeptonWeighter as LW
 #####
 
 ##
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter')
 from weighting.event_info import DataEventInfo
 from weighting.event_info import CascadeInfo, TrackInfo
 from helper.get_data_live_time import wrapper as get_live_time
@@ -129,7 +128,7 @@ def process_files(i3file_list, data_year, selection, liveTime, w_dir, yearly_inf
 def analysis_wrapper(selection, test=False, legacy_livetime=False):
     pi = np.pi
     proton_mass = 0.93827231 #GeV
-    w_dir = '/data/user/chill/icetray_LWCompatible/weights'
+    w_dir = config.weights_dir
 
     path_track = config.path_track    
     path_cascade = config.path_cascade

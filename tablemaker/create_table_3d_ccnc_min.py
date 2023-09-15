@@ -12,19 +12,16 @@ from tqdm import tqdm
 from scipy.interpolate import RectBivariateSpline
 import click
 
-#SQuIDS
-sys.path.append('/data/user/chill/SQuIDS/lib/')
-##nuSQuIDS libraries
-sys.path.append('/data/user/chill/nuSQuIDS/resources/python/bindings/')
 import nuSQUIDSpy as nsq
 import nuSQUIDSTools
 
 from fluxes import DiffFlux, AtmFlux, InitAtmFlux
 from fitting.fitting import translatePDGtoInfo
+from configs import config
 
 def getnuSQGridFiles(df, cache):
-    #nsq_filepath ='/data/user/chill/icetray_LWCompatible/propagation_grid/output_ccnc'
-    nsq_filepath ='/data/user/chill/icetray_LWCompatible/propagation_grid/output_minXsec'
+    #nsq_filepath =os.path.join(config.inner, 'propagation_grid/output_ccnc'
+    nsq_filepath =os.path.join(config.inner, 'propagation_grid/output_minXsec')
     fluxType = 'astro'
     glob_str = f'{nsq_filepath}/nuSQuIDS_flux_cache_*_{fluxType}.hdf'
     files = sorted(glob(glob_str))
@@ -455,7 +452,7 @@ def make3DMesh(df, ccList, ncList, weightCollection):
         i += 1    
 
 def main():
-    fpath = '/data/user/chill/icetray_LWCompatible/dataframes/'
+    fpath = config.dataframes_dir
     cache_file = 'cached2D_astro_ccnc_min.npy'
 
     cache = False

@@ -4,8 +4,10 @@ import os, sys
 import numpy as np
 import pandas as pd
 
+from configs import config
+
 def main():
-    df_dir = '/data/user/chill/icetray_LWCompatible/dataframes/'
+    df_dir = config.dataframes_dir
     print("Getting Lepton Injector Monte Carlo")
     df_li = pd.read_hdf(os.path.join(df_dir, 'li_total.hdf5'))
     df_li_c = df_li[df_li.Selection == 'cascade']

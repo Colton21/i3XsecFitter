@@ -1,4 +1,14 @@
+import os
+
 class config:
+    ###GENERIC CONFIGURATIONS###
+    fbase = '/disk19/users/colton.hill/'
+    base = '/disk20/users/chill/'
+    inner = os.path.join(base, 'icetray_LWCompatible_backup')
+    install = os.path.join(inner, 'i3XsecFitter')
+    weights_dir = os.path.join(inner, 'weights')
+    dataframes_dir = os.path.join(inner, 'dataframes')
+    
     #track_reco = 'SplineMPETruncatedEnergy_SPICEMie_AllDOMS_Neutrino'
     #track_reco = 'SplineMPETruncatedEnergy_SPICEMie_AllDOMS_Muon'
     track_reco = 'SplineMPEICTruncatedEnergySPICEMie_AllDOMS_Muon'
@@ -26,9 +36,9 @@ class config:
     legacy_i3_track_base_path = '/data/sim/IceCube/2019/filtered/finallevel/snowstorm/northern_tracks/'
     legacy_i3_cascade_base_path = '/data/user/chill/l5_cascade_lepton_injector/'
     ##new
-    lic_file_base_path = '/data/sim/IceCube/2020/generated/lepton-injector/'
-    i3_track_base_path = '/data/sim/IceCube/2020/filtered/finallevel/northern_tracks/lepton-injector/'
-    i3_cascade_base_path = '/data/user/chill/l5_cascade_lepton_injector_with_bkg/'
+    lic_file_base_path = fbase
+    i3_track_base_path = fbase
+    i3_cascade_base_path = fbase
 
     #########################################
 
@@ -46,10 +56,10 @@ class config:
     ### https://arxiv.org/pdf/2001.09520.pdf
     cascade_atmo_norm = 1.07
     #fluxPath = '/data/user/chill/icetray_LWCompatible/nuSQuIDS_propagation_files'
-    fluxPath = '/data/user/chill/icetray_LWCompatible/propagation_grid/output'
+    fluxPath = os.path.join(inner, 'propagation_grid/output')
     #########################################
     ##Cross Section Settings
-    xsecPath = '/data/user/chill/snowstorm_nugen_ana/xsec/data/'
+    xsecPath = os.path.join(inner, 'xsec/data/')
     normList = [1e-9, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 
                 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 
                 1.8, 1.9, 2.0, 3.0]

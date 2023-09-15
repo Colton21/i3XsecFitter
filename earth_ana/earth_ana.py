@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter')
 from helper.reco_helper import remove_bad_reco
 from configs.config import config
 
@@ -238,8 +237,8 @@ def main():
     gamma = True
     ##open central value, core down, all down, core up, and all up
 
-    plot_dir = '/data/user/chill/icetray_LWCompatible/i3XsecFitter/earth_ana/plots'
-    df_path  = '/data/user/chill/icetray_LWCompatible/dataframes/'
+    plot_dir = os.path.join(config.install, 'earth_ana/plots')
+    df_path  = os.path.join(config.inner, 'dataframes')
 
     ##determine the norm list from the perturbed samples, not the default
     ##but check it's present in the default for comparison

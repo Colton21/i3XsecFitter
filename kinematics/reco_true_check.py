@@ -7,7 +7,6 @@ import click
 import pandas as pd
 from glob import glob
 
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter')
 from helper.reco_helper import remove_bad_reco
 from weighting.create_weight_df_data import calc_live_time
 from configs.config import config
@@ -739,9 +738,9 @@ def simple_truth(df_li, opt='track', f_type='all', do_norms=False, best_fit=True
     saveHelper(fig3, f'simple_zenith_{opt}', 'truth')
 
 def get_dfs(opt='lepton_weighter'):
-    df_dir = '/data/user/chill/icetray_LWCompatible/dataframes/'
+    df_dir = config.dataframes_dir
     if opt.lower() == 'nugen':
-        print("Getting nuGen Monte Carlo")
+        print("DEPRICATED --- Getting nuGen Monte Carlo")
         #files_c = glob('../../snowstorm_nugen_ana/monte_carlo/merged_dfs/data_cache_neo*_cascade*')
         files_c = glob('../../snowstorm_nugen_ana/data_cache_neo*_cascade_weighted*')
         files_t = glob('../../snowstorm_nugen_ana/monte_carlo/merged_dfs/data_cache*_track*')

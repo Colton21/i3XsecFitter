@@ -6,6 +6,8 @@ import pandas as pd
 import os, sys
 import tables
 
+from configs import config
+
 def doConcatDF(df_list):
     df = pd.concat([df_list[0], df_list[1], df_list[2]])
     return df
@@ -426,7 +428,7 @@ def ratehist1d(df_t, df_c, binning, colours=['royalblue', 'goldenrod'],
 
 
         ##grab default xsec for comparison
-        default_path="/data/user/chill/snowstorm_nugen_ana/xsec/data/csms.h5"
+        default_path = os.path.join(config.inner, "xsec/data/csms.h5")
         t = tables.open_file(default_path)
         e_range = get_node(t, 'energies')
         node_list = ['s_CC_nu', 's_CC_nubar', 's_NC_nu', 's_NC_nubar']

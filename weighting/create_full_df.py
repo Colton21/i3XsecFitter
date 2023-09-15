@@ -6,11 +6,13 @@ import click
 from glob import glob
 import time
 
+from configs import config
+
 def gather_files(dataset, selection, CCNC, modGamma=False, earth='normal'):
     cc_nc = ['CC', 'NC', 'GR']
     selections = ['track', 'cascade']
     datasets = [21395, 21396, 21397, 21398, 21399, 21400, 21401, 21402, 21403, 21408]
-    mc_dir = '/data/user/chill/icetray_LWCompatible/weights'
+    mc_dir = config.weights_dir
     if dataset not in datasets or selection not in selections or CCNC not in cc_nc:
         raise NotImplementedError('Bad input to find file')
     if modGamma == False:
@@ -51,7 +53,7 @@ def df_wrapper(import_all, cache, modGamma=False, earth='normal'):
     if len(df_list) != 38:
         raise IOError(f'Number of data frames to be combined is wrong! Found Length: {len(df_list)}')
 
-    df_path = '/data/user/chill/icetray_LWCompatible/dataframes/'
+    df_path = config.dataframes_dir
     df_total = pd.concat(df_list, sort=False)
     if cache:
         if not modGamma:
@@ -64,14 +66,14 @@ def df_wrapper(import_all, cache, modGamma=False, earth='normal'):
             df_total.to_hdf(os.path.join(df_path, 'li_total_modGamma.hdf5'), key='df', mode='w')
 
 def df_data_wrapper(cache):
-    df_c = pd.read_hdf('/data/user/chill/icetray_LWCompatible/weights/weight_df_data_cascade.hdf')
-    df_t = pd.read_hdf('/data/user/chill/icetray_LWCompatible/weights/weight_df_data_track.hdf')
+    df_c = pd.read_hdf(os.path.join(config.weights_dir, 'weight_df_data_cascade.hdf'))
+    df_t = pd.read_hdf(os.path.join(config,weights_dir, 'weight_df_data_track.hdf'))
 
     df_total = pd.concat([df_t, df_c], sort=False)
     if cache:
-        df_total.to_hdf('/data/user/chill/icetray_LWCompatible/dataframes/data_total.hdf5', 
-                        key='df', mode='w')
-        print(f'Created /data/user/chill/icetray_LWCompatible/dataframes/data_total.hdf5')
+        out_file = os.path.join(config.dataframes_dir, 'data_total.hdf5')
+        df_total.to_hdf(out_file, key='df', mode='w')
+        print(f'Created {out_file}')
 
 @click.command()
 @click.option('--import_all', '-ia', is_flag=True)

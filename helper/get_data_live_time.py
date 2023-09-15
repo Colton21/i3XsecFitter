@@ -9,7 +9,6 @@ from I3Tray import I3Tray
 from icecube import icetray, dataio, dataclasses
 #####
 
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter/')
 from configs.config import config
     
 def get_standard_file(year):
@@ -253,6 +252,10 @@ def wrapper(selection, path_track, path_cascade, year_breakdown=False, alt_list=
 def main(selection, year_breakdown, alt):
     path_track = config.path_track
     path_cascade = config.path_cascade
+
+    if config.base.split("/")[0] is in ['disk19', 'disk20']:
+        raise NotImplementedError('This script is only valid on cobalts due to specific paths')
+
     wrapper(selection, path_track, path_cascade, year_breakdown=year_breakdown, alt_list=alt)
 
 if __name__ == "__main__":

@@ -9,16 +9,9 @@ from concurrent.futures import ProcessPoolExecutor, wait
 
 ##local libraries
 from fluxes import InitAtmFlux, AtmFlux, DiffFlux
-
-#SQuIDS
-sys.path.append('/data/user/chill/SQuIDS/lib/')
-##nuSQuIDS libraries
-sys.path.append('/data/user/chill/nuSQuIDS/resources/python/bindings/')
+from configs.config import config
 import nuSQUIDSpy as nsq
 import nuSQUIDSTools
-
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter')
-from configs.config import config
 
 
 def set_energy():

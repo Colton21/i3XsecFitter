@@ -22,7 +22,6 @@ import LeptonWeighter as LW
 #####
 
 ##local package
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter/')
 from event_info import EventInfo
 from event_info import CascadeInfo, TrackInfo
 from configs.config import config
@@ -179,10 +178,10 @@ def construct_weight_events(licfiles, flux_path, selection, CCNC, norm_list, f_t
     
     if CCNC.lower() in ['cc', 'nc']:
         xs = LW.CrossSectionFromSpline(
-        "/data/user/bsmithers/cross_sections/dsdxdy_nu_CC_iso.fits",
-        "/data/user/bsmithers/cross_sections/dsdxdy_nubar_CC_iso.fits",
-        "/data/user/bsmithers/cross_sections/dsdxdy_nu_NC_iso.fits",
-        "/data/user/bsmithers/cross_sections/dsdxdy_nubar_NC_iso.fits")
+        os.path.join(config.inner, "cross_sections/dsdxdy_nu_CC_iso.fits"),
+        os.path.join(config.inner, "cross_sections/dsdxdy_nubar_CC_iso.fits"),
+        os.path.join(config.inner, "cross_sections/dsdxdy_nu_NC_iso.fits"),
+        os.path.join(config.inner, "cross_sections/dsdxdy_nubar_NC_iso.fits"))
     elif CCNC.lower() == 'gr':
         xs = LW.GlashowResonanceCrossSection()
     else:
@@ -633,7 +632,6 @@ def analysis_wrapper(dataset, selection, do_all, flux_path, num_files,
     pi = np.pi
     proton_mass = 0.93827231 #GeV
     liveTime = 3.1536e7 #365 days in seconds
-    w_dir = '/data/user/chill/icetray_LWCompatible/weights'
     
     if test == True:
         norm_list = [1.0]
@@ -657,21 +655,17 @@ def analysis_wrapper(dataset, selection, do_all, flux_path, num_files,
     ##if dataset is None and do_all is True - grabs all files for 1 selection
     i3file_dirs, licfile_dirs = valid_dir(dataset, selection, do_all, legacy)
    
-    #i3file_dirs  = ['/data/user/chill/icetray_LWCompatible/temp_gr']
-    #licfile_dirs = ['/data/user/chill/icetray_LWCompatible/temp_gr']
-    #print('WARNING - i3file_dirs and licfile_dirs are FIXED FOR TESTING')
- 
     ##test has norm_list configured to only 1.0
     if test == True:
         process_files(i3file_dirs[0], licfile_dirs[0], 
                       flux_path, selection, num_files, liveTime, 
-                      w_dir, norm_list, f_type, earth, strange_flux)
+                      config.weights_dir, norm_list, f_type, earth, strange_flux)
         return        
     
     ##if do_all is False, size of dirs list is 1
     if do_all == False:
         process_files(i3file_dirs[0], licfile_dirs[0], flux_path, selection, 
-                      num_files, liveTime, w_dir, norm_list, f_type, earth, strange_flux)
+                      num_files, liveTime, config.weights_dir, norm_list, f_type, earth, strange_flux)
         return
 
 
@@ -682,7 +676,7 @@ def analysis_wrapper(dataset, selection, do_all, flux_path, num_files,
         for i3file_dir, licfile_dir in zip(i3file_dirs, licfile_dirs):
             futures.append(executor.submit(process_files, i3file_dir, licfile_dir, 
                                            flux_path, selection, num_files, liveTime, 
-                                           w_dir, norm_list, f_type, earth, strange_flux))
+                                           config.weights_dir, norm_list, f_type, earth, strange_flux))
     results = wait(futures)
     for result in results.done:
         print(result.result())

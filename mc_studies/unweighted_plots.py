@@ -11,8 +11,8 @@ import pandas as pd
 from I3Tray import I3Tray
 from icecube import icetray, dataio, dataclasses
 
-sys.path.append('/data/user/chill/icetray_LWCompatible/i3XsecFitter/')
 from weighting.event_info import EventInfo
+from configs import config
 
 def get_info(fList):
 
@@ -178,7 +178,9 @@ def main(energy, weight_only, compare):
     ##NOTE: this script is for verification of MC ONLY
     ##only for simple verification
     ##grab the files manually in the generated folder
-    
+   
+    print("THIS SCRIPT IS DEPRICATED SINCE 2023-09 -- FUTURE USE REQUIRES MODIFICATIONS")
+
     ##high E sample
     if energy == 'high':
         fPath = '/data/sim/IceCube/2020/generated/lepton-injector/22369/0000000-0000999/'

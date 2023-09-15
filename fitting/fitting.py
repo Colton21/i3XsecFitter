@@ -4,10 +4,6 @@ from scipy.optimize import curve_fit
 from tqdm import tqdm
 import glob
 
-#SQuIDS
-sys.path.append('/data/user/chill/SQuIDS/lib/')
-##nuSQuIDS libraries
-sys.path.append('/data/user/chill/nuSQuIDS/resources/python/bindings/')
 import nuSQUIDSpy as nsq
 import nuSQUIDSTools
 
