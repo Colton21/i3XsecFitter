@@ -7,10 +7,15 @@ class EventInfo(object):
         self.run          = []
         self.event_id     = []
         self.sub_event_id = []
-        #self.weight       = []
+
+        setattr(self, 'weight1.0_atmo',  [])
+        setattr(self, 'weight1.0_astro', [])
+        #self.weight1.0_atmo  = []
+        #self.weight1.0_astro = []
 
         self.pdg         = []
         self.is_neutrino = []
+        self.ccnc        = []
         self.nu_energy   = []
         self.nu_azimuth  = []
         self.nu_zenith   = []

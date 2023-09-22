@@ -9,6 +9,7 @@ import nuSQUIDSTools
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../weighting/'))
 from event_info import EventInfo
+from configs.config import config
 
 def translatePDGtoInfo(pdgList):
     flavList = (np.abs(pdgList) - 12) / 2
@@ -16,7 +17,8 @@ def translatePDGtoInfo(pdgList):
     return flavList, nnbarList
 
 ##open all nuSQuIDS cached states to create spline
-def initPropFiles(flux_path, norm_list, f_type, selection, earth):
+def initPropFiles(flux_path, f_type, selection, earth):
+    norm_list = config.normList
     print(f'Opening nuSQuIDS files for {f_type}, {selection} (n_norms = {len(norm_list)})')
     #this_path = os.path.dirname(os.path.abspath(__file__))
     #start_path = os.path.join(this_path, '../')
@@ -131,7 +133,7 @@ def runFit(normList, propW, fitFlag):
         raise ValueError(f'No valid fitFlag {fitFlag}!')
     return popt
 
-def propWeightFit(eventInfo, splineList, normList, sType='none'):
+def propWeightFit(eventInfo, splineList, normList, f_type):
 
     ##energy is in GeV
     ##make sure e is in eV!
@@ -141,51 +143,62 @@ def propWeightFit(eventInfo, splineList, normList, sType='none'):
         print('<fitting> Size of eventInfo is 0, skipping')
         return eventInfo
 
+    ##check which events are GR
+    ccnc  = eventInfo.ccnc
+    gr_tags = np.array(ccnc) == 'GR'
+
+    ##make the flavours and n/n-bar friendly to nuSQuIDS
     flavs, nnbars = translatePDGtoInfo(eventInfo.pdg)
+
+    ##pre-determine which fit should be used based on e and cos(z)
     fitFlags = getFitFlag(eList, coszList)
 
-    if sType == 'astro':
+    ##grab pre-calculated baseline flux from the eventInfo storage
+    if f_type == 'astro':
         fluxes = np.asarray(eventInfo.flux_astro)
-
-    if sType == 'atmo':
+    if f_type == 'atmo':
         fluxes = np.asarray(eventInfo.flux_atmo)
-
-    if sType == 'none':
-        fluxes = np.asarray(eventInfo.flux_astro) + np.asarray(eventInfo.flux_atmo)
 
     fit_x      = []
     fit_y      = []
     fit_params = []
 
-    k = 0
-    for e, cosz, fitFlag, flav, nnbar, flux in tqdm(zip(eList, coszList, fitFlags, flavs, nnbars, fluxes)):
+    ##Loop over each event
+    for e, cosz, fitFlag, flav, nnbar, flux, is_gr in zip(eList, coszList, fitFlags, 
+            flavs, nnbars, fluxes, gr_tags):
+        
+        ##splineList and normList are the same length
+        ##splineList is the group of nuSQuIDS flux splines
+        ##normList is the cross section normalisation list
         propW = np.ones(len(splineList))
+        
+        ##Loop over each normalistaion
         for i, nuSQ in enumerate(splineList):
-            w = nuSQ.EvalFlavor(int(flav), cosz, e, int(nnbar)) * normList[i]
-            propW[i] = w / flux
+            
+            ##new_flux is the flux at the detector assuming 
+            ##some cross section normalisation
+            new_flux = nuSQ.EvalFlavor(int(flav), cosz, e, int(nnbar))
+            
+            ##divide out nominal flux contribution (which is the flux at the detector)
+            ##multiply in the new flux contribution (also at detector)
+            ##scale interaction probability in the detector (linear)
+            ##except for GR events (cross section at detetor is the same!)
+            if is_gr == True:
+                propW[i] = (1 / flux) * new_flux * 1.0
+            else:
+                propW[i] = (1/ flux) * new_flux * normList[i]
+        
+        ##Fit across the new scale factor for each normalisation
         popt = runFit(normList, propW, fitFlag) 
 
         fit_x.append(normList)
         fit_y.append(propW)
         fit_params.append(popt)
 
-        k += 1
-
-    if sType == 'none':
-        eventInfo.fit_type   = fitFlags
-        eventInfo.fit_x      = fit_x
-        eventInfo.fit_y      = fit_y
-        eventInfo.fit_params = fit_params
-    if sType == 'astro':
-        eventInfo.fit_type_astro  = fitFlags
-        eventInfo.fit_x_astro     = fit_x
-        eventInfo.fit_y_astro     = fit_y
-        eventInfo.fit_params_astro = fit_params
-    if sType == 'atmo':
-        eventInfo.fit_type_atmo  = fitFlags
-        eventInfo.fit_x_atmo     = fit_x
-        eventInfo.fit_y_atmo     = fit_y
-        eventInfo.fit_params_atmo = fit_params
+    setattr(eventInfo, f'fit_type_{f_type}', fitFlags)
+    setattr(eventInfo, f'fit_x_{f_type}', fit_x)
+    setattr(eventInfo, f'fit_y_{f_type}', fit_y)
+    setattr(eventInfo, f'fit_params_{f_type}', fit_params)
 
     return eventInfo
 
